@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>تفاصيل العقار - إرث العقارية</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Cairo', sans-serif; }
+        body {
+            background: linear-gradient(145deg, #f3f6fc 0%, #e9f0f8 100%);
+            min-height: 100vh;
+            padding: 24px 16px 40px;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        /* بطاقة العقار الرئيسية */
+        .property-card {
+            background: white;
+            border-radius: 48px;
+            overflow: hidden;
+            box-shadow: 0 25px 45px -12px rgba(0, 0, 0, 0.25);
+            transition: transform 0.2s ease;
+        }
+        /* معرض الصور - دائري متجاوب */
+        .gallery {
+            display: flex;
+            overflow-x: auto;
+            scroll-snap-type: x mandatory;
+            gap: 8px;
+            background: #0a1a2a;
+            scroll-behavior: smooth;
+            padding: 12px;
+        }
+        .gallery img {
+            scroll-snap-align: start;
+            width: 100%;
+            max-height: 420px;
+            object-fit: contain;
+            background: #f8fafc;
+            border-radius: 32px;
+            flex-shrink: 0;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+        }
+        /* فيديو */
+        .video-wrapper {
+            background: #000;
+            display: flex;
+            justify-content: center;
+            padding: 16px;
+        }
+        .video-wrapper video, .video-wrapper iframe {
+            max-width: 100%;
+            max-height: 400px;
+            border-radius: 28px;
+            box-shadow: 0 12px 24px rgba(0,0,0,0.3);
+        }
+        /* نص العقار */
+        .info-section {
+            padding: 28px 28px 38px;
+        }
+        .price {
+            font-size: 2.4rem;
+            font-weight: 800;
+            color: #0f3b2c;
+            background: #e6f4ea;
+            display: inline-block;
+            padding: 8px 24px;
+            border-radius: 60px;
+            margin-bottom: 20px;
+            letter-spacing: -0.3px;
+        }
+        h1 {
+            font-size: 1.9rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+            color: #0b2b26;
+        }
+        .location {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #2c5f5a;
+            font-weight: 500;
+            margin-bottom: 24px;
+            font-size: 1.05rem;
+            background: #f0f5fa;
+            padding: 8px 18px;
+            border-radius: 40px;
+            width: fit-content;
+        }
+        .detail-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 18px;
+            margin: 28px 0;
+        }
+        .detail-card {
+            background: #f8fafd;
+            border-radius: 28px;
+            padding: 16px 20px;
+            text-align: center;
+            transition: all 0.2s;
+        }
+        .detail-label {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #4b6b6b;
+        }
+        .detail-value {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #1e4a3e;
+            margin-top: 6px;
+        }
+        .description {
+            background: #f9fbfd;
+            padding: 20px 24px;
+            border-radius: 32px;
+            line-height: 1.6;
+            color: #1f2f3a;
+            margin: 24px 0;
+        }
+        .contact-btn {
+            display: block;
+            background: #006b5e;
+            color: white;
+            text-align: center;
+            padding: 18px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            border-radius: 60px;
+            text-decoration: none;
+            transition: 0.2s;
+            margin-top: 12px;
+            letter-spacing: 0.5px;
+        }
+        .contact-btn:hover { background: #004d44; transform: scale(1.01);}
+        .not-found { text-align: center; padding: 60px 20px; color: #a00; background: white; border-radius: 48px;}
+        footer { text-align: center; margin-top: 24px; color: #4f6f6a;}
+        @media (max-width: 600px) {
+            .price { font-size: 1.8rem;}
+            .info-section { padding: 20px;}
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="property-card" id="propertyCard">
+        <div style="text-align:center; padding: 60px 20px;">جاري تحميل بيانات العقار... ⏳</div>
+    </div>
+</div>
+
+<script>
+    // ========== إعدادات الاتصال بـ Airtable ==========
+    const AIRTABLE_BASE_ID = 'YOUR_BASE_ID';            // ضع Base ID هنا
+    const AIRTABLE_TABLE_NAME = 'العقارات';              // اسم جدول العقارات بالضبط
+    const AIRTABLE_API_KEY = 'YOUR_API_KEY';            // ضع الـ Personal Access Token هنا
+
+    // ========== قراءة الكود من رابط الصفحة ==========
+    const urlParams = new URLSearchParams(window.location.search);
+    const propertyCode = urlParams.get('code');      // مثلاً ?code=PR-1001
+
+    if (!propertyCode) {
+        document.getElementById('propertyCard').innerHTML = `<div class="not-found"><h3>⚠️ لم يتم إرسال كود العقار</h3><p>الرجاء استخدام رابط صحيح.</p></div>`;
+    } else {
+        fetchPropertyData(propertyCode);
+    }
+
+    async function fetchPropertyData(code) {
+        // فلترة السجلات حسب حقل "كود العقار الداخلي"
+        const filterFormula = `{كود العقار الداخلي} = "${code}"`;
+        const url = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${encodeURIComponent(AIRTABLE_TABLE_NAME)}?filterByFormula=${encodeURIComponent(filterFormula)}&maxRecords=1`;
+
+        try {
+            const response = await fetch(url, {
+                headers: { 'Authorization': `Bearer ${AIRTABLE_API_KEY}` }
+            });
+            const data = await response.json();
+
+            if (!data.records || data.records.length === 0) {
+                showNotFound(`لم نجد عقاراً بهذا الكود: ${code}`);
+                return;
+            }
+
+            const record = data.records[0];
+            const fields = record.fields;
+            renderPropertyPage(fields);
+
+        } catch (error) {
+            console.error(error);
+            showNotFound("حدث خطأ في الاتصال بقاعدة البيانات. يرجى المحاولة لاحقاً.");
+        }
+    }
+
+    function renderPropertyPage(fields) {
+        // استخراج الحقول الأساسية
+        const propertyName = fields['اسم العقار'] || 'بدون عنوان';
+        const propertyType = fields['نوع العقار'] || 'عقار';
+        const location = fields['الموقع (المدينة)'] || '';
+        const neighborhood = fields['المنطقة/الحي'] || '';
+        const fullLocation = [location, neighborhood].filter(Boolean).join('، ') || 'لم يحدد';
+        const area = fields['المساحة (م²)'] ? fields['المساحة (م²)'] + ' م²' : 'غير محدد';
+        const price = fields['السعر المطلوب الحالي'] ? Number(fields['السعر المطلوب الحالي']).toLocaleString() + ' ريال' : 'السعر غير محدد حالياً، يرجى الاتصال بنا';
+        const description = fields['وصف تفصيلي'] || fields['وصف مختصر'] || 'لا يوجد وصف إضافي.';
+        const mapLink = fields['رابط الموقع (خرائط)'] || '';
+        
+        // معرض الصور (حقل attachments)
+        let imagesHtml = '';
+        if (fields['صور العقار'] && Array.isArray(fields['صور العقار']) && fields['صور العقار'].length > 0) {
+            imagesHtml = `<div class="gallery">${fields['صور العقار'].map(img => `<img src="${img.url}" alt="صورة العقار" loading="lazy">`).join('')}</div>`;
+        } else {
+            imagesHtml = `<div class="gallery"><div style="padding:60px; text-align:center; background:#eee;">📸 لا توجد صور معروضة</div></div>`;
+        }
+
+        // الفيديو (إن وجد)
+        let videoHtml = '';
+        const videoUrl = fields['فيديو العقار']?.[0]?.url || fields['رابط فيديو العقار'];
+        if (videoUrl) {
+            if (videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be')) {
+                let embedId = '';
+                if (videoUrl.includes('youtu.be')) embedId = videoUrl.split('/').pop();
+                else if (videoUrl.includes('watch?v=')) embedId = videoUrl.split('v=')[1]?.split('&')[0];
+                if (embedId) videoHtml = `<div class="video-wrapper"><iframe width="100%" height="280" src="https://www.youtube.com/embed/${embedId}" frameborder="0" allowfullscreen></iframe></div>`;
+            } else {
+                videoHtml = `<div class="video-wrapper"><video controls src="${videoUrl}" style="max-width:100%; max-height:350px"></video></div>`;
+            }
+        }
+
+        // مميزات إضافية
+        const features = fields['المميزات الإضافية'] || '';
+
+        // بناء واجهة العقار
+        const fullHtml = `
+            ${imagesHtml}
+            ${videoHtml}
+            <div class="info-section">
+                <div class="price">💰 ${price}</div>
+                <h1>${propertyName}</h1>
+                <div class="location">📍 ${fullLocation}</div>
+                <div class="detail-grid">
+                    <div class="detail-card"><div class="detail-label">🏷️ نوع العقار</div><div class="detail-value">${propertyType}</div></div>
+                    <div class="detail-card"><div class="detail-label">📐 المساحة</div><div class="detail-value">${area}</div></div>
+                    ${fields['عدد الأدوار'] ? `<div class="detail-card"><div class="detail-label">🏢 عدد الأدوار</div><div class="detail-value">${fields['عدد الأدوار']}</div></div>` : ''}
+                    ${fields['عدد الشقق في الدور'] ? `<div class="detail-card"><div class="detail-label">🏘️ شقق بالدور</div><div class="detail-value">${fields['عدد الشقق في الدور']}</div></div>` : ''}
+                </div>
+                ${features ? `<div class="detail-card" style="background:#f1f5f9;"><div class="detail-label">✨ مميزات إضافية</div><div class="detail-value" style="font-size:1rem;">${features}</div></div>` : ''}
+                <div class="description">📄 ${description}</div>
+                ${mapLink ? `<div style="margin: 12px 0;"><a href="${mapLink}" target="_blank" style="color:#006b5e;">🗺️ عرض الموقع على الخريطة</a></div>` : ''}
+                <a href="tel:783171777" class="contact-btn">📞 اتصل بنا للاستفسار (783171777)</a>
+                <div style="margin-top:16px; font-size:0.8rem; text-align:center; color:#aaa;">كود العقار: ${propertyCode}</div>
+            </div>
+        `;
+        document.getElementById('propertyCard').innerHTML = fullHtml;
+    }
+
+    function showNotFound(msg) {
+        document.getElementById('propertyCard').innerHTML = `<div class="not-found"><h3>⚠️ ${msg}</h3><p>تأكد من صحة الرابط أو تواصل مع خدمة العملاء.</p></div>`;
+    }
+</script>
+</body>
+</html>
