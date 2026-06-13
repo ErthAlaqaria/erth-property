@@ -1,4 +1,3 @@
-[property.html](https://github.com/user-attachments/files/28912493/property.html)
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -31,17 +30,17 @@
 </div>
 
 <script>
-    // 🔧 إعدادات Airtable الخاصة بك
-    const AIRTABLE_BASE_ID = 'appwY0M6F2lzjYt8J';     // Base ID (بدون أي جزء إضافي)
-    const AIRTABLE_TABLE_NAME = 'العقارات';           // اسم جدول العقارات
-    const AIRTABLE_API_KEY = 'patliYzgTSzMBhu87.9a0eb39b72d02f35598f6155bfe1d9ba1c0fbe0b2f6e86c86d7dbb233361c103';  // التوكن الكامل
+    // 🔧 بيانات Airtable (مع التوكن الجديد)
+    const AIRTABLE_BASE_ID = 'appwY0M6F2lzjYt8J';   // Base ID الخاص بك
+    const AIRTABLE_TABLE_NAME = 'العقارات';         // اسم الجدول
+    const AIRTABLE_API_KEY = 'pats9edDinbHXrfRS.4f0d451a2f28872c387cc5a77e55d87258f6c7032fe50c475b2fd772800fe50b';  // التوكن الجديد
 
     // قراءة كود العقار من الرابط
     const urlParams = new URLSearchParams(window.location.search);
     const propertyCode = urlParams.get('code');
 
     if (!propertyCode) {
-        document.getElementById('content').innerHTML = `<div class="error">❌ لم يتم إرسال كود العقار. الرجاء استخدام رابط صحيح (مثل ?code=PR-2).</div>`;
+        document.getElementById('content').innerHTML = `<div class="error">❌ لم يتم إرسال كود العقار. مثال: ?code=PR-2</div>`;
     } else {
         fetchProperty(propertyCode);
     }
@@ -57,7 +56,7 @@
             const data = await response.json();
 
             if (!response.ok) {
-                throw new Error(`خطأ في الاستجابة: ${response.status}`);
+                throw new Error(`HTTP ${response.status}`);
             }
 
             if (!data.records || data.records.length === 0) {
@@ -69,7 +68,7 @@
             renderProperty(fields);
         } catch (err) {
             console.error(err);
-            document.getElementById('content').innerHTML = `<div class="error">🚫 خطأ في الاتصال بقاعدة البيانات. تأكد من إعدادات API وأن الكود صحيح.</div>`;
+            document.getElementById('content').innerHTML = `<div class="error">🚫 خطأ في الاتصال بقاعدة البيانات. تأكد من صحة التوكن والكود.</div>`;
         }
     }
 
@@ -83,7 +82,6 @@
         const desc = fields['وصف تفصيلي'] || fields['وصف مختصر'] || 'لا يوجد وصف إضافي.';
         const mapLink = fields['رابط الموقع (خرائط)'] || '';
 
-        // صور
         let imagesHtml = '';
         if (fields['صور العقار'] && Array.isArray(fields['صور العقار']) && fields['صور العقار'].length) {
             imagesHtml = `<div class="gallery">${fields['صور العقار'].map(img => `<img src="${img.url}" alt="صورة العقار">`).join('')}</div>`;
